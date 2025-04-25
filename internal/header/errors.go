@@ -10,8 +10,7 @@ import "errors"
 - ErrInvalidHeight
 - ErrInvalidSize
 - ErrInvalidTime
-
-SHA 1 出错光看 Header 是看不出来的，所以定义在其他地方
+- ErrInvalidHash
 */
 
 var (
@@ -25,4 +24,6 @@ var (
 	ErrInvalidSize = errors.New("the size is not in the range of 10MB(GIF) 20MB(JPG, WEBP) 50MB(PNG)")
 	// ErrInvalidTime 错误时间
 	ErrInvalidTime = errors.New("the time is from the future")
+	// ErrInvalidHash 错误的 hash 值
+	ErrInvalidHash = errors.New("the first 40 characters of the file name is not a hash")
 )

@@ -1,6 +1,17 @@
 package header
 
-import "time"
+import (
+	"encoding/hex"
+	"fmt"
+	"time"
+)
+
+const (
+	GIF  uint8 = 0
+	JPG  uint8 = 1
+	WEBP uint8 = 2
+	PNG  uint8 = 3
+)
 
 /*
 这里定义了每个图片帧的头部信息
@@ -62,19 +73,19 @@ func (i *ImageHeader) Check() error {
 
 	// 检查大小是否合法
 	switch i.Type {
-	case 0:
+	case GIF:
 		if i.Size > 10*1024*1024 {
 			return ErrInvalidSize
 		}
-	case 1:
+	case JPG:
 		if i.Size > 20*1024*1024 {
 			return ErrInvalidSize
 		}
-	case 2:
+	case WEBP:
 		if i.Size > 20*1024*1024 {
 			return ErrInvalidSize
 		}
-	case 3:
+	case PNG:
 		if i.Size > 50*1024*1024 {
 			return ErrInvalidSize
 		}
@@ -121,7 +132,7 @@ func (i *ImageHeader) ToBytes() (result [32]byte, err error) {
 }
 
 // 从字节数组中读取信息
-func ToStruct(data [32]byte) (i ImageHeader, err error) {
+func FromBytes(data [32]byte) (i ImageHeader, err error) {
 	i = ImageHeader{
 		SHA1:   ([20]byte)(data[0:20]),
 		Size:   uint32(data[20])<<24 | uint32(data[21])<<16 | uint32(data[22])<<8 | uint32(data[23]),
@@ -129,6 +140,71 @@ func ToStruct(data [32]byte) (i ImageHeader, err error) {
 		Height: uint16(data[26])<<8 | uint16(data[27]),
 		Type:   data[28],
 		Time:   time.Now().Add(-time.Duration(uint32(data[29])<<16|uint32(data[30])<<8|uint32(data[31])) * 86400 / 4096),
+	}
+
+	// 检查合法性
+	if err := i.Check(); err != nil {
+		// 这里时间不合法也不该被忽略
+		// 因为这意味着该买可靠点的内存条了
+		return ImageHeader{}, err
+	}
+
+	// 返回结果
+	return i, nil
+}
+
+// 类似于 0020000a1c10db9f5321d41d9632dea899d09325-59968-1280-720-wbp
+func (i *ImageHeader) ToString() (string, error) {
+	// SHA1 to string
+	sha1Str := hex.EncodeToString(i.SHA1[:])
+
+	// Type to string
+	var typeStr string
+	switch i.Type {
+	case GIF:
+		typeStr = "gif"
+	case JPG:
+		typeStr = "jpg"
+	case WEBP:
+		typeStr = "wbp"
+	case PNG:
+		typeStr = "png"
+	default:
+		return "", ErrInvalidType
+	}
+
+	// 拼接字符串
+	return fmt.Sprintf("%s-%d-%d-%d-%s", sha1Str, i.Size, i.Width, i.Height, typeStr), nil
+}
+
+// 从字符串中读取信息
+func FromString(str string) (i ImageHeader, err error) {
+	// 解析字符串
+	var sha1Str, typeStr string
+	_, err = fmt.Sscanf(str, "%s-%d-%d-%d-%s", &sha1Str, &i.Size, &i.Width, &i.Height, &typeStr)
+	if err != nil {
+		return ImageHeader{}, err
+	}
+
+	// SHA1 to byte
+	sha1Bytes, err := hex.DecodeString(sha1Str)
+	if err != nil {
+		return ImageHeader{}, err
+	}
+	copy(i.SHA1[:], sha1Bytes)
+
+	// Type to byte
+	switch typeStr {
+	case "gif":
+		i.Type = GIF
+	case "jpg":
+		i.Type = JPG
+	case "wbp":
+		i.Type = WEBP
+	case "png":
+		i.Type = PNG
+	default:
+		return ImageHeader{}, ErrInvalidType
 	}
 
 	// 检查合法性
