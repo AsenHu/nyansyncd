@@ -212,12 +212,15 @@ func handleData(conn net.Conn) {
 				Msg("SHA1 mismatch")
 
 			// 返回错误的 SHA1
-			go func() {
-				if _, err := conn.Write(info.SHA1[:]); err != nil {
-					log.Error().Err(err).Msg("Failed to write SHA1")
-					conn.Close()
-				}
-			}()
+			/*
+				sender 暂时无法处理这些数据
+				go func() {
+					if _, err := conn.Write(info.SHA1[:]); err != nil {
+						log.Error().Err(err).Msg("Failed to write SHA1")
+						conn.Close()
+					}
+				}()
+			*/
 
 			continue
 		}

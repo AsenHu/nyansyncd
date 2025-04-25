@@ -41,12 +41,11 @@ var (
 func init() {
 	flag.StringVar(&LISTEN, "l", ":12345", "The address to listen on")
 	flag.StringVar(&CACHE_PATH, "c", "./cache", "The path to hath cache")
+	flag.Parse()
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 }
 
 func main() {
-	flag.Parse()
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
-
 	// 监听 TCP 端口
 	ln, err := net.Listen("tcp", LISTEN)
 	if err != nil {
